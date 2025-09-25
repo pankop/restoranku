@@ -2,10 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::get('/welcome', function () {
     return view('welcome');
 });
 
-Route::get('/customer', function () {
-    return view('/customer/layouts/master');
+Route::get('/customer/menu', function () {
+    return view('customer.menu');
 });
