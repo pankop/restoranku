@@ -16,7 +16,7 @@
                 <div class="row g-5">
                     <div class="col-md-12 col-lg-6 col-xl-6">
                         <div class="row">
-                            <div class="col-md-12 col-lg-4">                            <div class="form-item w-100">
+                            <div class="col-md-12 col-lg-4">                           <div class="form-item w-100">
                                     <label class="form-label my-3">Nama Lengkap<sup>*</sup></label>
                                     <input type="text" name="fullname" class="form-control" placeholder="Masukka nama Anda" required>
                                 </div>
@@ -123,7 +123,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end">
-                                    <button type="submit" id="pay-button" class="btn border-secondary py-3 text-uppercase text-primary">Konfirmasi Pesanan</button>
+                                    <button type="button" id="pay-button" class="btn border-secondary py-3 text-uppercase text-primary">Konfirmasi Pesanan</button>
                                 </div>
 
                             </div>
@@ -135,4 +135,175 @@
     </div>
 
     <!-- Checkout Page End -->
+    <script  src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ env('MIDTRANS_CLIENT_KEY') }}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const payButton = document.getElementById("pay-button");
+            const form = document.querySelector("form");
+
+            payButton.addEventListener("click", function () {
+                let paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+                if(!paymentMethod) {
+                    alert("Pilih Metode Pembayaran Terlebih Dahulu!");
+                    return;
+                }
+
+                paymentMethod = paymentMethod.value;
+                let formData = new FormData(form);
+
+                if(paymentMethod === "tunai") {
+                    form.submit();
+                } else {
+                    fetch("{{ route('checkout.store') }}", {
+                        method: "POST",
+                        body: formData,
+                        headers: {
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if(data.snap_token) {
+                                snap.pay(data.snap_token, {
+                                    onSuccess: function(result) {
+                                        window.location.href = "/checkout/success/" + data.order_code;
+                                    },
+                                    onPending: function(result) {
+                                        alert("Menunggu Pembayaran");
+                                    },
+                                    onError: function(result) {
+                                        alert("Pembayaran Gagal");
+                                    }
+                                });
+                            } else {
+                                alert("Terjadi kesalahan, silakan coba lagi.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            alert("Terjadi kesalahan, silakan coba lagi ya.");
+                        });
+                }
+            })
+        })
+        {{--const Toast = Swal.mixin({--}}
+        {{--    toast: true,--}}
+        {{--    position: 'top-end',--}}
+        {{--    showConfirmButton: false,--}}
+        {{--    timer: 3000,--}}
+        {{--    timerProgressBar: true,--}}
+        {{--    didOpen: (toast) => {--}}
+        {{--        toast.addEventListener('mouseenter', Swal.stopTimer)--}}
+        {{--        toast.addEventListener('mouseleave', Swal.resumeTimer)--}}
+        {{--    }--}}
+        {{--});--}}
+
+        {{--function showToast(icon, message) {--}}
+        {{--    Toast.fire({--}}
+        {{--        icon: icon,--}}
+        {{--        title: message--}}
+        {{--    });--}}
+        {{--}--}}
+
+        {{--document.addEventListener("DOMContentLoaded", function () {--}}
+        {{--    const payButton = document.getElementById("pay-button");--}}
+        {{--    const form = document.querySelector("form");--}}
+
+        {{--    payButton.addEventListener("click", function (e) {--}}
+        {{--        let paymentMethod = document.querySelector('input[name="payment_method"]:checked');--}}
+
+        {{--        if(!paymentMethod) {--}}
+        {{--            // Ganti alert() Validasi Pilihan--}}
+        {{--            Swal.fire({--}}
+        {{--                icon: 'warning',--}}
+        {{--                title: 'Pilihan Dibutuhkan!',--}}
+        {{--                text: 'Pilih Metode Pembayaran Terlebih Dahulu!',--}}
+        {{--                confirmButtonColor: '#3085d6',--}}
+        {{--            });--}}
+        {{--            return;--}}
+        {{--        }--}}
+
+        {{--        paymentMethod = paymentMethod.value;--}}
+        {{--        let formData = new FormData(form);--}}
+
+        {{--        if(paymentMethod === "tunai") {--}}
+        {{--            // Tampilkan konfirmasi SweetAlert sebelum submit tunai--}}
+        {{--            Swal.fire({--}}
+        {{--                title: 'Bayar Tunai?',--}}
+        {{--                text: "Pesanan akan dibuat dan pembayaran dilakukan di tempat.",--}}
+        {{--                icon: 'question',--}}
+        {{--                showCancelButton: true,--}}
+        {{--                confirmButtonColor: '#28a745', // Hijau untuk Tunai/OK--}}
+        {{--                cancelButtonColor: '#d33',--}}
+        {{--                confirmButtonText: 'Ya, Bayar Tunai!',--}}
+        {{--                cancelButtonText: 'Batal'--}}
+        {{--            }).then((result) => {--}}
+        {{--                if (result.isConfirmed) {--}}
+        {{--                    form.submit();--}}
+        {{--                }--}}
+        {{--            });--}}
+        {{--            // Kita tambahkan return di sini agar kode selanjutnya tidak tereksekusi--}}
+        {{--            return;--}}
+        {{--        } else {--}}
+        {{--            // Proses Midtrans--}}
+        {{--            fetch("{{ route('checkout.store') }}", {--}}
+        {{--                method: "POST",--}}
+        {{--                body: formData,--}}
+        {{--                headers: {--}}
+        {{--                    "X-CSRF-TOKEN": "{{ csrf_token() }}"--}}
+        {{--                }--}}
+        {{--            })--}}
+        {{--                .then(response => response.json())--}}
+        {{--                .then(data => {--}}
+        {{--                    if(data.snap_token) {--}}
+        {{--                        snap.pay(data.snap_token, {--}}
+        {{--                            onSuccess: function(result) {--}}
+        {{--                                // Notifikasi sukses (optional, karena akan redirect)--}}
+        {{--                                showToast('success', 'Pembayaran berhasil!');--}}
+        {{--                                window.location.href = "/checkout/success/" + data.order_code;--}}
+        {{--                            },--}}
+        {{--                            onPending: function(result) {--}}
+        {{--                                // Ganti alert() Pending--}}
+        {{--                                Swal.fire({--}}
+        {{--                                    icon: 'info',--}}
+        {{--                                    title: 'Menunggu Pembayaran',--}}
+        {{--                                    text: 'Pembayaran Anda sedang menunggu konfirmasi.',--}}
+        {{--                                    confirmButtonColor: '#17a2b8', // Biru untuk Info--}}
+        {{--                                });--}}
+        {{--                            },--}}
+        {{--                            onError: function(result) {--}}
+        {{--                                // Ganti alert() Gagal--}}
+        {{--                                Swal.fire({--}}
+        {{--                                    icon: 'error',--}}
+        {{--                                    title: 'Pembayaran Gagal!',--}}
+        {{--                                    text: 'Terjadi kesalahan saat memproses pembayaran online.',--}}
+        {{--                                    confirmButtonColor: '#d33',--}}
+        {{--                                });--}}
+        {{--                            }--}}
+        {{--                        });--}}
+        {{--                    } else {--}}
+        {{--                        // Ganti alert() Error Server--}}
+        {{--                        Swal.fire({--}}
+        {{--                            icon: 'error',--}}
+        {{--                            title: 'Kesalahan Server',--}}
+        {{--                            text: 'Terjadi kesalahan saat menyiapkan pembayaran, silakan coba lagi.',--}}
+        {{--                            confirmButtonColor: '#d33',--}}
+        {{--                        });--}}
+        {{--                    }--}}
+        {{--                })--}}
+        {{--                .catch(error => {--}}
+        {{--                    console.error("Error:", error);--}}
+        {{--                    // Ganti alert() Error Jaringan--}}
+        {{--                    Swal.fire({--}}
+        {{--                        icon: 'error',--}}
+        {{--                        title: 'Kesalahan Jaringan',--}}
+        {{--                        text: 'Gagal terhubung ke server, silakan cek koneksi Anda.',--}}
+        {{--                        confirmButtonColor: '#d33',--}}
+        {{--                    });--}}
+        {{--                });--}}
+        {{--        }--}}
+        {{--    })--}}
+        {{--})--}}
+    </script>
 @endsection
