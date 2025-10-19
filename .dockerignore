@@ -1,0 +1,11 @@
+# Abaikan dependensi
+/vendor
+/node_modules
+
+# Abaikan file cache Laravel
+/bootstrap/cache/*.php
+/bootstrap/cache/packages.php
+/bootstrap/cache/services.php
+
+# Abaikan file environment lokal
+.env

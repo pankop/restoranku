@@ -1,0 +1,77 @@
+services:
+  mysql:
+    hostname: mysql-restoranku
+    image: mysql:8.0
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    restart: no
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+    #      - MYSQL_USER=${DB_USERNAME}
+    #      - MYSQL_PASSWORD=${DB_PASSWORD}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USERNAME} -p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    hostname: app
+    container_name: restoranku
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    restart: no
+    volumes:
+      - ./:/app
+      - ./storage:/app/storage
+    #      - laravel-storage:/app/storage (Aktifkan untuk production)
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - app-network
+    command: ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8000", "--watch"]
+
+  mailhog:
+    hostname: mailhog
+    image: mailhog/mailhog:latest
+    restart: no
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025" # SMTP
+      - "${MAILHOG_UI_PORT:-8025}:8025"   # Web UI
+    networks:
+      - app-network
+
+  phpmyadmin:
+    hostname: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: no
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+#  laravel-storage: (Aktifkan ini kalau production)
+
+networks:
+  app-network:
+    driver: bridge
